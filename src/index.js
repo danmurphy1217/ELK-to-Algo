@@ -32,7 +32,9 @@ class AlgoLogger {
       if (err) { console.error(err) } else {
         let unstructuredDataArr = data.split('\n');
         let structuredData = await this.structure(unstructuredDataArr);
-        return structuredData
+        this.data = structuredData;
+
+        return this.data;
       }
     })
   }
@@ -82,26 +84,50 @@ class AlgoLogger {
     console.log(exists);
     return exists
   }
+
+  async _createIndex(indexName, indexMappings) {
+    // create elasticsearch index
+    await client.indices.create({
+      index: indexName,
+      body: {
+        mappings: {
+          properties: indexMappings
+        }
+      }
+    }, { ignore: [400] })
+  }
+
+  async _uploadData(indexName) {
+
+    const body = this.data.flatMap( (doc) => [{ index: { _index: indexName } }, doc])
+    const { body: bulkResponse } = await client.bulk({ refresh: true, body })
+    return bulkResponse
+  }
+
   async upload(indexName, indexMappings) {
     // upload to elasticsearch
     let indexExists = await this._indiceExistsFor(indexName);
-    
+
     if (!indexExists) {
       // if indice does not exist...
       console.log("index does not exist, creating it now");
-      await client.indices.create({
-        index: indexName,
-        body: {
-          mappings: {
-            properties: indexMappings
-          }
-        }
-      }, { ignore: [400] })
-
-    } else {
-      // if index exists...
-      console.log("index exists, uploading data to existing index.");
+      this._createIndex(indexName, indexMappings);
     }
+
+    // index exists, we can now upload data to it.
+    this._uploadData(indexName)
+    let {body: { count: count } } = await client.count({ index: indexName })
+
+    console.log(`There are ${count} total documents in index ${indexName}`);
+  }
+
+  async testIndex(indexName, queryParams) {
+    const { body } = await client.search({
+        index: indexName,
+        body: queryParams
+      })
+
+      console.log(body.hits.hits);
   }
 
 }
@@ -118,4 +144,12 @@ let mappings = {
   date: {type: "date"},
   id: {type: "integer"}
 }
-Algo.upload("algorand", mappings).catch(console.log);
+// Algo.upload("algorand", mappings).catch(console.log);
+Algo.testIndex("algorand",
+  {
+    query: {
+      match: {
+        type: "VoteAccepted"
+      }
+    }
+  }).catch(console.log)
