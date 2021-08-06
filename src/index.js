@@ -16,9 +16,6 @@ client.cluster.health({},function(err,resp,status) {
   }
 });
 
-exports.Client = client
-
-
 class AlgoLogger {
   /* using file name, read in algo logs and bulk upload them to elasticsearch */
   constructor(fPath, elasticsearchClient, algoUrl) {
@@ -76,12 +73,49 @@ class AlgoLogger {
     return lineData
   }
 
-  async upload() {
-    // upload to elasticsearch
+  async _indiceExistsFor(indexName) {
+    /* check if index `indexName` exists, return result */
 
+    const res = await client.indices.exists({index: indexName})
+    const exists = res.body
+
+    console.log(exists);
+    return exists
+  }
+  async upload(indexName, indexMappings) {
+    // upload to elasticsearch
+    let indexExists = await this._indiceExistsFor(indexName);
+    
+    if (!indexExists) {
+      // if indice does not exist...
+      console.log("index does not exist, creating it now");
+      await client.indices.create({
+        index: indexName,
+        body: {
+          mappings: {
+            properties: indexMappings
+          }
+        }
+      }, { ignore: [400] })
+
+    } else {
+      // if index exists...
+      console.log("index exists, uploading data to existing index.");
+    }
   }
 
 }
 
 const Algo = new AlgoLogger('/Users/danielmurphy/Desktop/ELK-to-Algo/node.log', '', 'sdfgfsh');
-Algo.parse().catch(console.log);
+// Algo.parse().catch(console.log);
+let mappings = {
+  context: {type: "text"},
+  hash: {type: "text"},
+  round: {type: "integer"},
+  sender: {type: "text"},
+  type: {type: "text"},
+  msg: {type: "text"},
+  date: {type: "date"},
+  id: {type: "integer"}
+}
+Algo.upload("algorand", mappings).catch(console.log);
