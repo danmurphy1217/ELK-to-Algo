@@ -1,0 +1,14 @@
+# Path to log files:
+#
+path.logs: /Users/danielmurphy/Desktop/ELK-to-Algo
+# ---------------------------------- Network -----------------------------------
+#
+# By default Elasticsearch is only accessible on localhost. Set a different
+# address here to expose this node on the network:
+#
+network.host: "localhost"
+#
+# By default Elasticsearch listens for HTTP traffic on the first free port it
+# finds starting at 9200. Set a specific HTTP port here:
+#
+http.port: 9200
