@@ -75,4 +75,6 @@ to test the connection and make sure kibana is running as expected.
 
 At this point, we have elasticsearch and kibana running but do not have any data in elasticsearch to visualize! Now, we will setup a pipline from the Algornad Algod API to Elasticsearch.
 
-#TODO
+In `src/index.js` are three classes: `Reader`, `Parser`, and `Uploader`. `Reader`'s sole purpose is to read in data from an external API. In this specific scenario, it is best used for communicating with the Algorand Algod API. `Parser`'s sole purpose is to take the data returned from `Reader` and parse it. This parsing includes structuring the data so that it is prepared for insertion into elasticsearch. Finally, the `Uploader` class takes the structured data returned from `Parser` and send it to elasticsearch.
+
+Once this process is complete, you have successfully populated elasticsearch with data. Afterwards, the next step is to build dashboards and other visualizations in Kibana.
