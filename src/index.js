@@ -45,7 +45,7 @@ class AlgoLogger {
 
     for (var lineNum in unstructuredDataArr) {
       const line = unstructuredDataArr[lineNum]
-      const structuredLine = this._buildElasticsearchPayloadFrom(line, lineNum)
+      const structuredLine = await this._buildElasticsearchPayloadFrom(line, lineNum)
       console.log(structuredLine);
       dataForElasticsearch.push(
         structuredLine
@@ -64,7 +64,7 @@ class AlgoLogger {
     try {
       jsonifiedLog = JSON.parse(log);
     }
-    catch(e) { return }
+    catch(e) { return } // if cannot be parsed by JSON, return
 
     keysToFetch.forEach( (key) => {
       lineData[key.toLowerCase()] = jsonifiedLog[key]
@@ -81,7 +81,6 @@ class AlgoLogger {
     const res = await client.indices.exists({index: indexName})
     const exists = res.body
 
-    console.log(exists);
     return exists
   }
 
@@ -115,7 +114,7 @@ class AlgoLogger {
     }
 
     // index exists, we can now upload data to it.
-    this._uploadData(indexName)
+    await this._uploadData(indexName)
     let {body: { count: count } } = await client.count({ index: indexName })
 
     console.log(`There are ${count} total documents in index ${indexName}`);
@@ -134,22 +133,25 @@ class AlgoLogger {
 
 const Algo = new AlgoLogger('/Users/danielmurphy/Desktop/ELK-to-Algo/node.log', '', 'sdfgfsh');
 // Algo.parse().catch(console.log);
-let mappings = {
-  context: {type: "text"},
-  hash: {type: "text"},
-  round: {type: "integer"},
-  sender: {type: "text"},
-  type: {type: "text"},
-  msg: {type: "text"},
-  date: {type: "date"},
-  id: {type: "integer"}
-}
-// Algo.upload("algorand", mappings).catch(console.log);
-Algo.testIndex("algorand",
-  {
-    query: {
-      match: {
-        type: "VoteAccepted"
-      }
-    }
-  }).catch(console.log)
+// let mappings = {
+//   context: {type: "text"},
+//   hash: {type: "text"},
+//   round: {type: "integer"},
+//   sender: {type: "text"},
+//   type: {type: "text"},
+//   msg: {type: "text"},
+//   date: {type: "date"},
+//   id: {type: "integer"}
+// }
+// Promise.resolve(Algo.upload("algorand", mappings).catch(console.log)).then( (res) => {console.log(res);});
+// Algo.testIndex("algorand",
+//   {
+//     query: {
+//       match: {
+//         type: "VoteAccepted"
+//       }
+//     }
+//   }).catch(console.log)
+
+
+exports.AlgoLogger = AlgoLogger
