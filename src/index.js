@@ -9,20 +9,20 @@ class Reader {
    * an API endpoint
    */
 
-  constructor(url, keysToFetch = null, {
+  constructor(url, {
     headers,
     params,
     body
-  } = {}) {
+  } = {}, keysToFetch = null) {
     /**
      * `location` -> (String): the location to read the
      * data from
      */
     this.url = url
-    this.keysToFetch = keysToFetch
     this.headers = headers;
-    this.params = params
-    this.body = body
+    this.params = params;
+    this.body = body;
+    this.keysToFetch = keysToFetch;
   }
 
   async read() {
@@ -285,12 +285,11 @@ let mappings = {
   }
 }
 
-const reader = new Reader("http://127.0.0.1:8080/v2/transactions/pending", null, {
+const reader = new Reader("http://127.0.0.1:8080/v2/transactions/pending", {
   headers: {
     "X-Algo-API-Token": process.env.TOKEN
   }
 })
-
 
 async function run() {
   let parser = await reader.read();
