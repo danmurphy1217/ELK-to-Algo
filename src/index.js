@@ -2,18 +2,19 @@ const {
   Client
 } = require('@elastic/elasticsearch');
 const fetch = require('node-fetch');
+const fs = require('fs');
 
-class Reader {
+class APIReader {
   /**
    * reads in data, whether it be from a file or
    * an API endpoint
    */
 
-  constructor(url, {
+  constructor( {url, keysToFetch} = '',{
     headers,
     params,
     body
-  } = {}, keysToFetch = null) {
+  } = {}) {
     /**
      * `location` -> (String): the location to read the
      * data from
@@ -58,6 +59,36 @@ class Reader {
 
 }
 
+class FileReader extends APIReader {
+  constructor(logPath, keysToFetch) {
+    super(keysToFetch);
+    this.logPath = logPath;
+  }
+
+  async read() {
+    /**
+     * call the pingEndpoint helper function and return
+     * Parser(this)
+     */
+
+    let response = await this._readFromFile();
+
+    return new Parser(this);
+  }
+
+  async _readFromFile() {
+    /**
+     * read from file, return structured data.
+     */
+
+    const data = fs.readFileSync(this.logPath, 'utf-8');
+    let unstructuredDataArr = data.split('\n');
+    this.data = unstructuredDataArr;
+
+    return this.data;
+  }
+}
+
 class Parser {
   constructor(reader) {
     this.reader = reader
@@ -94,23 +125,23 @@ class Parser {
      *
      * returns -> (Array): cleaned line data
      */
-    let keysToFetch = this.reader.keysToFetch !== null ? this.reader.keysToFetch : Object.keys(rawData['txn']);
-    let structuredData = new Object()
-    let jsonifiedData;
+     let jsonifiedData;
 
-    if (typeof rawData !== 'object') {
-      try {
-        jsonifiedData = JSON.parse(rawData);
-      } catch (e) {
-        return
-      } // if cannot be parsed by JSON, return (skip the line)
-    } else {
-      jsonifiedData = rawData;
-    }
+     if (typeof rawData !== 'object') {
+       try {
+         jsonifiedData = JSON.parse(rawData);
+       } catch (e) {
+         return
+       } // if cannot be parsed by JSON, return (skip the line)
+     } else {
+       jsonifiedData = rawData;
+     }
+
+    let keysToFetch = this.reader.keysToFetch !== undefined ? this.reader.keysToFetch : Object.keys(jsonifiedData);
+    let structuredData = new Object()
 
     keysToFetch.forEach((key) => {
-      structuredData[key.toLowerCase()] = jsonifiedData['txn'][key]
-      structuredData['sig'] = jsonifiedData['sig']
+      structuredData[key.toLowerCase()] = jsonifiedData[key]
     })
 
     structuredData["date"] = new Date()
@@ -285,20 +316,23 @@ let mappings = {
   }
 }
 
-const reader = new Reader("http://127.0.0.1:8080/v2/transactions/pending", {
+const reader = new APIReader({url: "http://127.0.0.1:8080/v2/transactions/pending"}, {
   headers: {
     "X-Algo-API-Token": process.env.TOKEN
   }
 })
 
-async function run() {
+console.log(reader);
+
+const freader = new FileReader("/Users/danielmurphy/Desktop/ELK-to-Algo/test.log")
+
+async function run(reader) {
   let parser = await reader.read();
   let uploader = await parser.structure();
-  console.log(uploader);
   await uploader.uploadTo(elasticsearchClient, {
     mappings: mappings,
     indexName: "algorand-final"
   })
 }
 
-run().catch(console.log)
+run(reader).catch(console.log)
