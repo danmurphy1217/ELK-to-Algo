@@ -204,13 +204,29 @@ class Uploader {
         _index: indexName
       }
     }, doc])
+    let chunk = 10000;
+    let i, j;
+
+    for (i = 0, j = body.length; i < j; i += chunk) {
+      let jsonData = body.slice(i, i + chunk);
+      const {
+        body: bulkResponse
+      } = await this.client.bulk({
+        refresh: true,
+        body: jsonData
+      })
+    }
+
+    let jsonData = body.slice(i - chunk, j);
+
     const {
       body: bulkResponse
     } = await this.client.bulk({
       refresh: true,
-      body
+      body: jsonData
     })
-    return bulkResponse
+
+    console.log(bulkResponse.items);
   }
 
   async uploadTo(client, {
@@ -322,9 +338,7 @@ const reader = new APIReader({url: "http://127.0.0.1:8080/v2/transactions/pendin
   }
 })
 
-console.log(reader);
-
-const freader = new FileReader("/Users/danielmurphy/Desktop/ELK-to-Algo/test.log")
+const freader = new FileReader("/Users/danielmurphy/Desktop/ELK-to-Algo/node.log")
 
 async function run(reader) {
   let parser = await reader.read();
@@ -335,4 +349,4 @@ async function run(reader) {
   })
 }
 
-run(reader).catch(console.log)
+run(freader).catch(console.log)
