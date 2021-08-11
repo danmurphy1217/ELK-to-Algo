@@ -7,7 +7,10 @@ run_kibana:
 run_elasticsearch:
 	chmod +x ./scripts/run_elasticsearch.sh & ./scripts/run_elasticsearch.sh
 
-runall: download run_kibana run_elasticsearch
+populate:
+	node src/index.js $(type) $(path_or_url) --mappings $(mappings)
+
+runall: download run_kibana run_elasticsearch populate
 
 clean:
 	rm -rf elasticsearch-7.14.0
