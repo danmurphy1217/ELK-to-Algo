@@ -10,7 +10,10 @@ class APIReader {
    * an API endpoint
    */
 
-  constructor( {url, keysToFetch} = '',{
+  constructor({
+    url,
+    keysToFetch
+  } = '', {
     headers,
     params,
     body
@@ -125,17 +128,17 @@ class Parser {
      *
      * returns -> (Array): cleaned line data
      */
-     let jsonifiedData;
+    let jsonifiedData;
 
-     if (typeof rawData !== 'object') {
-       try {
-         jsonifiedData = JSON.parse(rawData);
-       } catch (e) {
-         return
-       } // if cannot be parsed by JSON, return (skip the line)
-     } else {
-       jsonifiedData = rawData;
-     }
+    if (typeof rawData !== 'object') {
+      try {
+        jsonifiedData = JSON.parse(rawData);
+      } catch (e) {
+        return
+      } // if cannot be parsed by JSON, return (skip the line)
+    } else {
+      jsonifiedData = rawData;
+    }
 
     let keysToFetch = this.reader.keysToFetch !== undefined ? this.reader.keysToFetch : Object.keys(jsonifiedData);
     let structuredData = new Object()
@@ -332,15 +335,9 @@ let mappings = {
   }
 }
 
-const reader = new APIReader({url: "http://127.0.0.1:8080/v2/transactions/pending"}, {
-  headers: {
-    "X-Algo-API-Token": process.env.TOKEN
-  }
-})
+let args = process.argv;
 
-const freader = new FileReader("/Users/danielmurphy/Desktop/ELK-to-Algo/node.log")
-
-async function run(reader) {
+async function run(reader, mappings) {
   let parser = await reader.read();
   let uploader = await parser.structure();
   await uploader.uploadTo(elasticsearchClient, {
@@ -349,4 +346,38 @@ async function run(reader) {
   })
 }
 
-run(freader).catch(console.log)
+let itemToRun;
+
+if (args.includes('--file') && args[args.indexOf('--file') + 1] !== undefined) {
+  itemToRun = new FileReader(args[3])
+} else if (args.includes('--url') && args[args.indexOf('--url') + 1] !== undefined) {
+
+  if (!process.env.TOKEN) {
+    throw new Error("Must set TOKEN environment variable for Algorand API token.")
+  }
+
+  itemToRun = new APIReader({
+    url: args[3]
+  }, {
+    headers: {
+      "X-Algo-API-Token": process.env.TOKEN
+    }
+  })
+
+} else {
+  if (!args.includes('--file') && !args.includes('--url')) {
+    throw new Error("Please specify `--file` or `--url` along with the appropriate mappings.")
+  } else {
+    if (args.includes('--file') && args[args.indexOf('--file') + 1] === undefined) {
+      throw new Error("Please provide a file path.")
+    } else {
+      throw new Error("Please provide a url.")
+    }
+  }
+}
+
+if (!args.includes('--mappings') || args[args.indexOf('--mappings') + 1] === undefined) {
+  throw new Error('Please specify mappings for elasticsearch.')
+}
+
+run(itemToRun, args[args.indexOf('--mappings') + 1]).catch(console.log)
