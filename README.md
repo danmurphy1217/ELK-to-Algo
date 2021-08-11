@@ -74,4 +74,4 @@ On a basic level, any `Algorand-to-Elasticsearch` pipeline will follow the follo
   run(fReader).catch(console.log)
   ```
 
-After this, you can navigate to http://localhost:5601 (or whichever port you are running kibana on) and explore your data.
+After this, you can navigate to http://localhost:5601 (or whichever port you are running kibana on) and explore your data. Please see [TUTORIAL.md](https://github.com/danmurphy1217/ELK-to-Algo/blob/main/TUTORIAL.md) for a full walkthrough of automating this process & importing data into kibana.
