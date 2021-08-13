@@ -155,13 +155,16 @@ These steps take a bit to complete, and in an effort to make it as frictionless 
 1. To download elasticsearch and kibana and set up the basic configurations for them, run `Make download`. This retrieves their zipped files from https://elastic.co, unzips them, and adds the basic configurations for the elasticsearch and kibana nodes in their respective `config` folders.
 2. To run kibana, use `Make run_kibana`. This spins up the kibana server and allows you to navigate to http://localhost:5601 to view your dashboards.
 3. To run elasticsearch, use `Make run_elasticsearch`. This spinds up the elasticseach server and allows you to begin storing data in elasticsearch.
-4. To populate elasticsearch, run `Make populate` with the appropriate arguments. If you want to send file-based data to elasticsearch, the command should look like this: `Make populate type='--file' path_or_url='[file_path]' mappings='{msg: "place mappings for each value here"}'`. If you want to send API-based data to elasticsearch, the command should look like this: `Make populate type='--url' path_or_url='[url_path]' mappings='{msg: "place mappings for each value here"}'`. Mappings should look similar to the following (with the keys and values for the types replaced with the mapping for your data): `{arcv: {type: "text"}, sig: {type: "text"}, fee: { type: "integer"}`. Each variable should have a specified type. Successfully running `Make populate` with send data to elasticsearch and allow you to begin building complex visualizations in kibana.
+4. To populate elasticsearch, run `Make populate` with the appropriate arguments. If you want to send file-based data to elasticsearch, the command should look like this: `Make populate type='--file' path_or_url='[file_path]' mappings='{msg: "place mappings for each value here"}'`. If you want to send API-based data to elasticsearch, the command should look like this: `Make populate type='--url' path_or_url='[url_path]' mappings='{msg: "place mappings for each value here"}'`. Mappings should look similar to the following (with the keys and values for the types replaced with the mapping for your data): `{arcv: {type: "text"}, sig: {type: "text"}, fee: { type: "integer"}`. Each variable should have a specified type. Successfully running `Make populate` with send data to elasticsearch and allow you to begin building complex visualizations in kibana. To replicate the mappings for the dashboard stored in `kibana_algorand_db.ndjson`, run:
+  ```
+  make populate type='--file' path_or_url='/Users/danielmurphy/Desktop/ELK-to-Algo/node.log' mappings='{Type: {type: "text"}, Weight: {type: "integer"}, WeightTotal: {type: "integer", level: {type: "text"}, Sender: {type: "text"}}'
+  ```
 5. To clean up the elasticsearch and kibana files and start from scratch, run `Make clean`.
 
 Lastly, to import the pre-configured dashboard into Kibana, follow these steps:
 1. Navigate to http://localhost:5601/app/home#/
 2. Open the Menu on the left side of the screen and click 'Stack Management'
 2. Click 'Saved Objects'
-3. Click 'Import' and import the `.ndjson` stored in the root of this github repository.
+3. Click 'Import' and import the `kibana_algorand_db.ndjson` stored in the root of this github repository.
 
 If you have questions about this process, please refer to [this video demo](https://share.getcloudapp.com/2nulxnzv)
