@@ -293,48 +293,6 @@ const elasticsearchClient = new Client({
   }
 })
 
-let mappings = {
-  arcv: {
-    type: "text"
-  },
-  sig: {
-    type: "text"
-  },
-  fee: {
-    type: "integer"
-  },
-  fv: {
-    type: "integer"
-  },
-  gen: {
-    type: "text"
-  },
-  gh: {
-    type: "text"
-  },
-  lv: {
-    type: "integer"
-  },
-  note: {
-    type: "text"
-  },
-  snd: {
-    type: "text"
-  },
-  type: {
-    type: "axfer"
-  },
-  xaid: {
-    type: "integer"
-  },
-  date: {
-    type: "date"
-  },
-  id: {
-    type: "text"
-  }
-}
-
 let args = process.argv;
 
 async function run(reader, mappings) {
