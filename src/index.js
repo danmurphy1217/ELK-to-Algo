@@ -29,15 +29,17 @@ class APIReader {
     this.keysToFetch = keysToFetch;
   }
 
-  async read() {
+  async read(isText = false) {
     /**
      * call the pingEndpoint helper function and return
      * Parser(this)
      */
 
     let response;
-    response = await this._pingEndpoint(this.url)
+    this.isText = isText;
 
+    response = await this._pingEndpoint(this.url)
+    console.log(response);
     return new Parser(this);
   }
 
@@ -46,18 +48,60 @@ class APIReader {
      * ping `this.url` and return JSON data for top-transactions.
      */
 
-    let json;
+    let parsedResponse;
 
     try {
       let res = await fetch(this.url, {
         headers: this.headers
       })
-      json = await res.json();
+
+      if (this.isText) {
+        let unformattedText = await res.text();
+        parsedResponse = await this._formatText(unformattedText);
+      } else {
+        parsedResponse = await res.json();
+      }
+
     } catch (err) {
       return new Error(err);
     }
 
-    this.data = json['top-transactions'];
+    this.data = parsedResponse;
+  }
+
+  async _formatText(unformattedText) {
+
+    function extractKeyFrom(lineSplitAtSpaces) {
+      let unformattedKey = lineSplitAtSpaces[0]
+      let formattedKey = unformattedKey.replace('{}', '');
+      console.log(formattedKey);
+      return formattedKey;
+    }
+
+    function extractValueFrom(lineSplitAtSpaces) {
+      let formattedValue = lineSplitAtSpaces[1].replace(' ', '')
+      console.log(formattedValue);
+      return formattedValue;
+    }
+    let splitTextAtNewline = unformattedText.split("\n")
+    let textWithoutComments = splitTextAtNewline.filter((line) => line.indexOf('#') !== 0 && line !== '')
+
+    let keysForJSON = [];
+    let valuesForJSON = [];
+
+    textWithoutComments.forEach((line) => {
+      keysForJSON.push(extractKeyFrom(line.split(' ')));
+      valuesForJSON.push(extractValueFrom(line.split(' ')));
+    });
+
+    console.log(keysForJSON, valuesForJSON);
+    let jsonifiedData = new Object;
+
+    keysForJSON.forEach( (key, i) => {
+      jsonifiedData[key] = valuesForJSON[i];
+    })
+
+    return [jsonifiedData]
   }
 
 }
@@ -107,6 +151,7 @@ class Parser {
 
     let dataForElasticsearch = new Array()
 
+
     for (var i in this.reader.data) {
       const line = this.reader.data[i]
       const structuredLine = await this._buildElasticsearchPayloadFrom(line, i)
@@ -141,6 +186,7 @@ class Parser {
     }
 
     let keysToFetch = this.reader.keysToFetch !== undefined ? this.reader.keysToFetch : Object.keys(jsonifiedData);
+    console.log(keysToFetch);
     let structuredData = new Object()
 
     keysToFetch.forEach((key) => {
@@ -200,7 +246,7 @@ class Uploader {
      * upload data to the elasticsearch index.
      *
      * indexName -> (String): the name of the index
-     */
+     // */
 
     const body = this.parser.structuredData.flatMap((doc) => [{
       index: {
@@ -229,7 +275,7 @@ class Uploader {
       body: jsonData
     })
 
-    console.log(bulkResponse.items);
+    // console.log(bulkResponse.items);
   }
 
   async uploadTo(client, {
@@ -295,8 +341,8 @@ const elasticsearchClient = new Client({
 
 let args = process.argv;
 
-async function run(reader, mappings) {
-  let parser = await reader.read();
+async function run(reader, mappings, isText = false) {
+  let parser = await reader.read(isText);
   let uploader = await parser.structure();
   await uploader.uploadTo(elasticsearchClient, {
     mappings: mappings,
@@ -338,4 +384,4 @@ if (!args.includes('--mappings') || args[args.indexOf('--mappings') + 1] === und
   throw new Error('Please specify mappings for elasticsearch.')
 }
 
-run(itemToRun, args[args.indexOf('--mappings') + 1]).catch(console.log)
+run(itemToRun, args[args.indexOf('--mappings') + 1], isText = true).catch(console.log)
