@@ -39,7 +39,6 @@ class APIReader {
     this.isText = isText;
 
     response = await this._pingEndpoint(this.url)
-    console.log(response);
     return new Parser(this);
   }
 
@@ -72,15 +71,14 @@ class APIReader {
   async _formatText(unformattedText) {
 
     function extractKeyFrom(lineSplitAtSpaces) {
-      let unformattedKey = lineSplitAtSpaces[0]
+
+      let unformattedKey = lineSplitAtSpaces[0] === 'algod_network_connections_dropped_total{reason="reader' || 'algod_network_connections_dropped_total{reason="write'? lineSplitAtSpaces[0].concat(lineSplitAtSpaces[1]) : lineSplitAtSpaces[0]
       let formattedKey = unformattedKey.replace('{}', '');
-      console.log(formattedKey);
       return formattedKey;
     }
 
     function extractValueFrom(lineSplitAtSpaces) {
-      let formattedValue = lineSplitAtSpaces[1].replace(' ', '')
-      console.log(formattedValue);
+      let formattedValue = lineSplitAtSpaces[0] === 'algod_network_connections_dropped_total{reason="reader' || 'algod_network_connections_dropped_total{reason="write'? lineSplitAtSpaces[2] : lineSplitAtSpaces[1]
       return formattedValue;
     }
     let splitTextAtNewline = unformattedText.split("\n")
@@ -94,7 +92,7 @@ class APIReader {
       valuesForJSON.push(extractValueFrom(line.split(' ')));
     });
 
-    console.log(keysForJSON, valuesForJSON);
+
     let jsonifiedData = new Object;
 
     keysForJSON.forEach( (key, i) => {
@@ -186,8 +184,8 @@ class Parser {
     }
 
     let keysToFetch = this.reader.keysToFetch !== undefined ? this.reader.keysToFetch : Object.keys(jsonifiedData);
-    console.log(keysToFetch);
     let structuredData = new Object()
+
 
     keysToFetch.forEach((key) => {
       structuredData[key.toLowerCase()] = jsonifiedData[key]
@@ -275,7 +273,6 @@ class Uploader {
       body: jsonData
     })
 
-    // console.log(bulkResponse.items);
   }
 
   async uploadTo(client, {
@@ -289,8 +286,6 @@ class Uploader {
      * indexMappings -> (Object): the data type mappings for the fields in the index
      */
     this.client = client;
-
-    console.log(indexName);
 
     let indexExists = await this._indiceExistsFor(indexName);
 
